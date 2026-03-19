@@ -3,30 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0">
-    <title>SEIF AFANDI - MANDELBOX MELTDOWN</title>
+    <title>SEIF AFANDI - INFERNO GPU KILLER</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Consolas', monospace; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; }
         canvas { display: block; width: 100vw; height: 100vh; }
         #ui {
-            position: fixed; top: 30px; left: 30px; padding: 25px;
-            background: rgba(0, 0, 0, 0.9); border-left: 5px solid #ff0055;
-            color: #fff; z-index: 100; backdrop-filter: blur(15px);
-            box-shadow: 0 0 30px rgba(255, 0, 85, 0.5);
+            position: fixed; top: 40px; left: 40px; padding: 25px;
+            background: rgba(40, 0, 0, 0.8); border: 3px solid #ff4400;
+            color: #ffaa00; z-index: 100; box-shadow: 0 0 50px #ff2200;
         }
-        .warning-text { font-size: 26px; font-weight: 900; color: #ff0055; text-transform: uppercase; animation: pulse 0.5s infinite alternate; }
-        @keyframes pulse { from { opacity: 1; text-shadow: 0 0 10px #ff0055; } to { opacity: 0.5; text-shadow: 0 0 30px #ff0055, 0 0 50px #ff0055; } }
-        .info { font-size: 14px; opacity: 0.9; margin-top: 10px; color: #00f2ff; }
-        .val { font-weight: bold; color: #fff; }
-        #fps { font-size: 35px; color: #00ff00; margin-top: 20px; border-top: 2px solid #333; padding-top: 15px; }
+        .burn { font-size: 28px; font-weight: 900; color: #ff0000; text-shadow: 0 0 20px #ff0000; animation: flicker 0.1s infinite; }
+        @keyframes flicker { 0% { opacity: 0.8; } 100% { opacity: 1; transform: skewX(1deg); } }
+        .stat { margin-top: 10px; font-size: 15px; color: #fff; }
+        #fps { font-size: 40px; color: #ff0000; margin-top: 20px; border-top: 1px solid #ff4400; }
     </style>
 </head>
 <body>
     <div id="ui">
-        <div class="warning-text">CRITICAL OVERLOAD: SEIF AFANDI</div>
-        <div class="info">CORE GEOMETRY: <span class="val">4D MANDELBOX</span></div>
-        <div class="info">FRACTAL ITERS: <span class="val">200</span> (NESTED FOLDING)</div>
-        <div class="info">RAY PATH STEPS: <span class="val">20000</span> (PRECISION)</div>
-        <div class="info">GPU STRESS MODE: <span class="val">ULTRA-INFERNO</span></div>
+        <div class="burn">🔥 SYSTEM MELTDOWN 🔥</div>
+        <div class="stat">MODE: <span style="color:#ff0">FIRE FRACTAL 4D</span></div>
+        <div class="stat">ITERS: 200 | STEPS: 20000</div>
+        <div class="stat">THERMAL LOAD: <span style="color:#f00">CRITICAL</span></div>
         <div id="fps">FPS: --</div>
     </div>
     <canvas id="c1"></canvas>
@@ -35,123 +32,88 @@
     const canvas = document.getElementById('c1');
     const gl = canvas.getContext('webgl');
 
-    // الشادر القاتل: يدمج هندسة 4D Mandelbox مع إضاءة محيطية معقدة جداً
     const KERNEL = `
     precision highp float;
     uniform float iTime;
     uniform vec2 iResolution;
     uniform vec3 iCamPos;
-    uniform vec3 iCamForward;
-    uniform vec3 iCamUp;
-    uniform vec3 iCamRight;
     uniform float uIters; 
     uniform int uSteps;
 
-    // دالة الدوران في الفضاء ثلاثي الأبعاد لزيادة الحمل
     mat2 rot(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
 
-    // تقنية Sphere Folding لزيادة تعقيد السطح بشكل أسي
-    void sphereFold(inout vec3 p, inout float scale) {
-        float r2 = dot(p, p);
-        if (r2 < 0.5) { 
-            p *= 2.0;
-            scale *= 2.0;
-        } else if (r2 < 1.0) { 
-            p /= r2;
-            scale /= r2;
-        }
+    // دالة الضوضاء لعمل تموجات النار
+    float noise(vec3 p) {
+        return fract(sin(dot(p, vec3(12.9898, 78.233, 45.164))) * 43758.5453);
     }
 
-    // تقنية Box Folding لإجبار الكارت على تنفيذ طيات مكانية معقدة
-    void boxFold(inout vec3 p) {
-        p = clamp(p, -1.0, 1.0) * 2.0 - p;
-    }
-
-    // هندسة Mandelbox: جوهر الضغط - يتم تنفيذها 200 مرة داخل كل عينة (Step)
-    float mandelbox(vec3 p) {
+    // محرك الفراكتل الناري: Mandelbox مع تشويه مكاني
+    float map(vec3 p) {
         float scale = 1.0;
         vec3 p0 = p;
-        p.xy *= rot(iTime * 0.1); // دوران ديناميكي
         
+        // تشويه "الحرارة" - يستهلك طاقة GPU هائلة
+        p.xz *= rot(iTime * 0.3);
+        p.y += sin(p.x * 2.0 + iTime * 5.0) * 0.2; 
+
         for (int i = 0; i < 201; i++) {
             if (float(i) >= uIters) break;
-            boxFold(p);       // طي مكعبي
-            sphereFold(p, scale); // طي كروي
-            p = scale * p + p0; // تغذية راجعة
-            scale = scale * 2.0 + 1.0;
+            
+            // طي مكعبي ناري
+            p = abs(p) - 1.0;
+            if (p.x < p.y) p.xy = p.yx;
+            if (p.x < p.z) p.xz = p.zx;
+            
+            // تمدد وحرارة
+            float r2 = dot(p, p);
+            float k = max(1.5 / r2, 0.1);
+            p *= k;
+            scale *= k;
+            p += p0 * 0.5;
         }
-        return (length(p) - 1.0) / abs(scale);
-    }
-
-    // دالة لحساب الظلال المحيطية (AO) بشكل مرعب: كل بكسل يحسب 5 عينات إضافية
-    float ambientOcclusion(vec3 p, vec3 n) {
-        float ao = 0.0;
-        float d = 1.0;
-        for (int i = 1; i <= 5; i++) {
-            float dist = mandelbox(p + n * d); // رندر إضافي داخل كل بكسل!
-            ao += (d - dist) * 0.2;
-            d *= 0.5;
-        }
-        return clamp(1.0 - ao, 0.0, 1.0);
+        return 0.3 * length(p.xy) / scale;
     }
 
     void main() {
         vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / min(iResolution.y, iResolution.x);
-        vec3 rayDir = normalize(iCamForward + uv.x * iCamRight + uv.y * iCamUp);
         
+        // تأثير Heat Haze (سراب الحرارة) لزيادة تعقيد الحساب بكل بكسل
+        uv.x += sin(uv.y * 10.0 + iTime * 10.0) * 0.005;
+        
+        vec3 rayDir = normalize(vec3(uv, 1.2));
         float t = 0.0, d = 0.0;
-        int stepsTaken = 0;
+        float glow = 0.0;
 
-        // الضغط القاتل: 20,000 خطوة مع معامل تقدم صغير (0.2)
-        // هذا يجبر الكارت على معالجة كل مليمتير في الفضاء الفراكتلي دون اختصار
+        // الرندر القاتل: 20000 خطوة مع معامل تقدم صغير جداً (0.1)
         for (int i = 0; i < 20001; i++) {
             if (i >= uSteps) break;
-            d = mandelbox(iCamPos + rayDir * t);
-            if (d < 0.00001 || t > 10.0) break; // دقة تلامس فائقة (0.00001)
-            t += d * 0.2; // معامل تقدم صغير جداً لإجبار الكارت على تنفيذ الخطوات
-            stepsTaken = i;
-        }
-
-        vec3 color = vec3(0.0);
-        if (t < 10.0) {
             vec3 p = iCamPos + rayDir * t;
-            // حساب النورمال لحساب الـ AO (مجهد حسابياً)
-            vec2 e = vec2(0.001, 0.0);
-            vec3 n = normalize(vec3(
-                mandelbox(p + e.xyy) - mandelbox(p - e.xyy),
-                mandelbox(p + e.yxy) - mandelbox(p - e.yxy),
-                mandelbox(p + e.yyx) - mandelbox(p - e.yyx)
-            ));
-
-            // تلوين جحيمي: برتقالي وأحمر متوهج عند الضغط العالي
-            float heat = float(stepsTaken) / float(uSteps);
-            vec3 baseColor = mix(vec3(0.0, 0.1, 0.4), vec3(1.0, 0.3, 0.0), heat);
+            d = map(p);
             
-            // إضافة الـ Ambient Occlusion القاتل للأداء
-            float aoVal = ambientOcclusion(p, n);
-            color = baseColor * aoVal;
-
-            // إضافة تأثير توهج (Bloom) داخلي للألوان لزيادة الضغط
-            color += vec3(0.8, 0.0, 0.2) * pow(heat, 4.0) * 3.0;
-        } else {
-            // تأثير "سديم" في الخلفية لزيادة الضغط على البكسلات الفارغة
-            color = vec3(0.05, 0.0, 0.1) * (1.0 - uv.y * 0.5);
+            // تجميع "التوهج" (Glow Accumulation) - مجهد جداً للذاكرة الرسومية
+            glow += (1.0 / float(uSteps)) * exp(-d * 5.0);
+            
+            if (d < 0.0001 || t > 12.0) break;
+            t += d * 0.1; // تقدم بطيء جداً = ضغط أقصى
         }
 
-        // تصحيح الألوان النهائي
-        color = pow(color, vec3(0.5));
-        gl_FragColor = vec4(color, 1.0);
+        // تدرج ألوان النار (أسود -> أحمر -> برتقالي -> أبيض)
+        vec3 fireCol = mix(vec3(0.1, 0.0, 0.0), vec3(1.0, 0.2, 0.0), glow * 15.0);
+        fireCol = mix(fireCol, vec3(1.0, 0.9, 0.5), glow * 5.0);
+        
+        // تأثير الاحتراق والضباب
+        vec3 color = fireCol * exp(-0.1 * t);
+        
+        // تصحيح الألوان (Gamma)
+        gl_FragColor = vec4(pow(color, vec3(0.6)), 1.0);
     }`;
 
-    // --- إعدادات البرنامج الأساسية ---
+    // إعدادات الـ WebGL
     const VSHADER_SOURCE = `attribute vec4 position; void main() { gl_Position = position; }`;
     function createShader(gl, type, source) {
         const shader = gl.createShader(type);
         gl.shaderSource(shader, source);
         gl.compileShader(shader);
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.error(gl.getShaderInfoLog(shader));
-        }
         return shader;
     }
     const program = gl.createProgram();
@@ -165,9 +127,6 @@
         time: gl.getUniformLocation(program, 'iTime'),
         res: gl.getUniformLocation(program, 'iResolution'),
         pos: gl.getUniformLocation(program, 'iCamPos'),
-        fwd: gl.getUniformLocation(program, 'iCamForward'),
-        up: gl.getUniformLocation(program, 'iCamUp'),
-        right: gl.getUniformLocation(program, 'iCamRight'),
         iters: gl.getUniformLocation(program, 'uIters'),
         steps: gl.getUniformLocation(program, 'uSteps')
     };
@@ -182,20 +141,14 @@
     let frameCount = 0;
     let lastTime = Date.now();
 
-    // دالة الرندر الأساسية
     function render() {
         const now = Date.now();
         const elapsed = (now - startTime) / 1000.0;
         
-        // هنا نجعل القيم تبدأ فوراً من الحد الأقصى دون تدرج
-        let currentIters = 200.0; 
-        let currentSteps = 20000;
-
         frameCount++;
         if (now - lastTime >= 1000) {
             document.getElementById('fps').innerText = `FPS: ${frameCount}`;
-            // تغيير لون الـ FPS بناءً على الانهيار
-            document.getElementById('fps').style.color = frameCount < 10 ? "#f00" : "#0f0";
+            document.getElementById('fps').style.color = frameCount < 5 ? "#ff0000" : "#ffff00";
             frameCount = 0; lastTime = now;
         }
 
@@ -203,30 +156,15 @@
         canvas.height = window.innerHeight;
         gl.viewport(0, 0, canvas.width, canvas.height);
 
-        // حركة كاميرا بسيطة لمراقبة الانهيار من زوايا مختلفة
-        const camPos = [Math.sin(elapsed * 0.1) * 3.0, 1.0, Math.cos(elapsed * 0.1) * 3.0];
-        const target = [0, 0, 0];
-        const f = normalize([target[0]-camPos[0], target[1]-camPos[1], target[2]-camPos[2]]);
-        const r = normalize(cross(f, [0, 1, 0]));
-        const u = cross(r, f);
-
         gl.uniform1f(uniforms.time, elapsed);
         gl.uniform2f(uniforms.res, canvas.width, canvas.height);
-        gl.uniform3fv(uniforms.pos, camPos);
-        gl.uniform3fv(uniforms.fwd, f);
-        gl.uniform3fv(uniforms.up, u);
-        gl.uniform3fv(uniforms.right, r);
-        gl.uniform1f(uniforms.iters, currentIters);
-        gl.uniform1i(uniforms.steps, currentSteps);
+        gl.uniform3f(uniforms.pos, 0.0, 0.0, -4.0 + Math.sin(elapsed*0.1));
+        gl.uniform1f(uniforms.iters, 200.0);
+        gl.uniform1i(uniforms.steps, 20000);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         requestAnimationFrame(render);
     }
-
-    // دوال رياضية مساعدة
-    function normalize(v) { let l = Math.sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]); return [v[0]/l, v[1]/l, v[2]/l]; }
-    function cross(a, b) { return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
-
     render();
     </script>
 </body>
