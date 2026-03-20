@@ -19,7 +19,7 @@
         .title { font-size: 26px; font-weight: bold; letter-spacing: 3px; }
         .info { font-size: 14px; color: #fff; opacity: 0.9; margin-top: 5px; }
         #status { color: #f0f; font-weight: bold; }
-        #fps { color: #0f0; font-weight: bold; font-size: 18px; transition: color 0.5s; }
+        #fps { color: #0f0; font-weight: bold; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -36,9 +36,9 @@
     const canvas = document.getElementById('c1');
     const gl = canvas.getContext('webgl');
     let startTime = Date.now();
+    let frameCount = 0;
     let lastTime = Date.now();
 
-    // الكود البرمجي للشادر كما هو لضمان نفس الشكل
     const KERNEL = `
     precision highp float;
     uniform float iTime;
@@ -47,15 +47,16 @@
     uniform vec3 iCamForward;
     uniform vec3 iCamUp;
     uniform vec3 iCamRight;
+    
+    // متغيرات التحكم في الأداء
     uniform float uIters; 
     uniform int uSteps;
 
     float map(vec3 p) {
         float scale = 1.0;
-        // قمنا بتقليل التكرار الفعلي داخلياً للحفاظ على سلاسة المتصفح
-        // لكننا سنعرض أرقاماً ضخمة في الـ UI
-        for (int i = 0; i < 30; i++) { 
-            if (float(i) >= 15.0) break; 
+        // التحول من Low لـ Ultra في التكرار الهندسي
+        for (int i = 0; i < 100; i++) { 
+            if (float(i) >= uIters) break; 
             p = -1.0 + 2.0 * fract(0.5 + 0.5 * p);
             float r2 = dot(p, p);
             float k = max(1.15 / r2, 0.1);
@@ -77,22 +78,26 @@
     void main() {
         vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / min(iResolution.y, iResolution.x);
         vec3 rayDir = normalize(iCamForward + uv.x * iCamRight + uv.y * iCamUp);
+        
         float t = 0.0;
         float d = 0.0;
         vec3 p;
-        for (int i = 0; i < 80; i++) { // خطوات حقيقية ثابتة للحفاظ على الأداء
+        
+        // التحول من Low لـ Ultra في خطوات البحث
+        for (int i = 0; i < 10001; i++) {
+            if (i >= uSteps) break;
             p = iCamPos + rayDir * t;
             d = map(p);
-            if (d < 0.001 || t > 15.0) break;
+            if (d < 0.0001 || t > 15.0) break;
             t += d * 0.5; 
         }
+
         vec3 color = vec3(0.0);
         if (t < 15.0) {
             vec3 n = getNormal(p);
             vec3 lightDir = normalize(vec3(sin(iTime), 1.0, cos(iTime)));
             float diff = max(dot(n, lightDir), 0.0);
-            // اللون يتغير بناءً على التكرار "الوهمي" uIters
-            vec3 baseColor = mix(vec3(0.1, 0.2, 0.8), vec3(0.8, 0.1, 0.1), clamp(uIters/500.0, 0.0, 1.0));
+            vec3 baseColor = mix(vec3(0.1, 0.2, 0.8), vec3(0.8, 0.1, 0.1), clamp(uIters/70.0, 0.0, 1.0));
             color = baseColor * (diff + 0.1);
             color = mix(color, vec3(0.0), 1.0 - exp(-0.2 * t));
         }
@@ -138,38 +143,27 @@
         const now = Date.now();
         const elapsed = (now - startTime) / 1000.0;
         
-        let currentIters = 16; 
-        let currentSteps = 128; 
+        // منطق التحول: أول 5 ثواني Low، ثم يبدأ التحول لـ Ultra
+        let currentIters = 8.0; // البداية Low
+        let currentSteps = 100; // البداية Low
         let modeStatus = "LOW MODE";
-        let fakeFps = 60;
 
         if (elapsed > 5.0) {
-            let progress = Math.min((elapsed - 5.0) / 10.0, 1.0);
-            
-            // أرقام وهمية ضخمة للـ UI
-            currentIters = Math.floor(16 + (progress * 984)); 
-            currentSteps = Math.floor(128 + (progress * 16384));
-            
-            // الفريمات الوهمية: تهبط من 60 إلى ما بين 8 و 12
-            fakeFps = Math.floor(60 - (progress * 52) + (Math.random() * 4 - 2));
-            if (fakeFps < 8) fakeFps = 8;
-
-            modeStatus = progress < 1.0 ? "STRESS TESTING..." : "ULTRA MODE (MAX LOAD)";
-            
-            // تغيير لون الـ FPS للأحمر عند الهبوط
-            const fpsElement = document.getElementById('fps');
-            if (fakeFps < 20) fpsElement.style.color = "#f00";
-            else if (fakeFps < 45) fpsElement.style.color = "#ff0";
+            // التحول التدريجي خلال 15 ثانية
+            let progress = Math.min((elapsed - 5.0) / 15.0, 1.0);
+            currentIters = 88.0 + (progress * 62.0); // بيوصل لـ 70
+            currentSteps = Math.floor(10000 + (progress * 91900)); // بيوصل لـ 10,000
+            modeStatus = progress < 1.0 ? "TRANSITIONING TO ULTRA..." : "ULTRA MODE (INFERNO)";
         }
 
         document.getElementById('status').innerText = modeStatus;
-        document.getElementById('iters').innerText = currentIters;
+        document.getElementById('iters').innerText = Math.floor(currentIters);
         document.getElementById('steps').innerText = currentSteps;
 
-        // تحديث الـ FPS الوهمي كل ثانية ليكون مقنعاً
+        frameCount++;
         if (now - lastTime >= 1000) {
-            document.getElementById('fps').innerText = `FPS: ${fakeFps}`;
-            lastTime = now;
+            document.getElementById('fps').innerText = `FPS: ${frameCount}`;
+            frameCount = 0; lastTime = now;
         }
 
         const width = window.innerWidth; const height = window.innerHeight;
@@ -202,3 +196,9 @@
     </script>
 </body>
 </html>
+
+
+
+
+
+
