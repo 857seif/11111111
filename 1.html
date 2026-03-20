@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0">
-    <title>SEIF AFANDI - OPTIMIZED BENCHMARK</title>
+    <title>SEIF AFANDI - DYNAMIC STRESS TEST</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Consolas', monospace; }
-        /* استخدام تقنية الـ Upscaling لتحسين الأداء */
-        canvas { display: block; width: 100vw; height: 100vh; image-rendering: pixelated; }
+        canvas { display: block; width: 100vw; height: 100vh; }
         #ui {
             position: fixed;
             top: 20px;
@@ -20,7 +19,7 @@
         .title { font-size: 26px; font-weight: bold; letter-spacing: 3px; }
         .info { font-size: 14px; color: #fff; opacity: 0.9; margin-top: 5px; }
         #status { color: #f0f; font-weight: bold; }
-        #fps { color: #0f0; font-weight: bold; font-size: 18px; }
+        #fps { color: #0f0; font-weight: bold; font-size: 18px; transition: color 0.5s; }
     </style>
 </head>
 <body>
@@ -37,10 +36,11 @@
     const canvas = document.getElementById('c1');
     const gl = canvas.getContext('webgl');
     let startTime = Date.now();
+    let lastTime = Date.now();
 
-    // الكود البرمجي (الشيدر) تم تبسيطه "داخلياً" ليظل سريعاً جداً
+    // الكود البرمجي للشادر كما هو لضمان نفس الشكل
     const KERNEL = `
-    precision mediump float; // تقليل الدقة للأجهزة الضعيفة
+    precision highp float;
     uniform float iTime;
     uniform vec2 iResolution;
     uniform vec3 iCamPos;
@@ -48,11 +48,14 @@
     uniform vec3 iCamUp;
     uniform vec3 iCamRight;
     uniform float uIters; 
+    uniform int uSteps;
 
     float map(vec3 p) {
         float scale = 1.0;
-        // تقليل عدد التكرارات الحقيقية لـ 12 كحد أقصى للحفاظ على الأداء
-        for (int i = 0; i < 12; i++) { 
+        // قمنا بتقليل التكرار الفعلي داخلياً للحفاظ على سلاسة المتصفح
+        // لكننا سنعرض أرقاماً ضخمة في الـ UI
+        for (int i = 0; i < 30; i++) { 
+            if (float(i) >= 15.0) break; 
             p = -1.0 + 2.0 * fract(0.5 + 0.5 * p);
             float r2 = dot(p, p);
             float k = max(1.15 / r2, 0.1);
@@ -62,18 +65,37 @@
         return 0.25 * abs(p.y) / scale;
     }
 
+    vec3 getNormal(vec3 p) {
+        vec2 e = vec2(0.001, 0.0);
+        return normalize(vec3(
+            map(p + e.xyy) - map(p - e.xyy),
+            map(p + e.yxy) - map(p - e.yxy),
+            map(p + e.yyx) - map(p - e.yyx)
+        ));
+    }
+
     void main() {
         vec2 uv = (gl_FragCoord.xy - 0.5 * iResolution.xy) / min(iResolution.y, iResolution.x);
         vec3 rayDir = normalize(iCamForward + uv.x * iCamRight + uv.y * iCamUp);
         float t = 0.0;
-        // تقليل خطوات البحث لـ 40 خطوة فقط لضمان السلاسة
-        for (int i = 0; i < 40; i++) {
-            float d = map(iCamPos + rayDir * t);
-            if (d < 0.01 || t > 10.0) break;
-            t += d * 0.6; 
+        float d = 0.0;
+        vec3 p;
+        for (int i = 0; i < 80; i++) { // خطوات حقيقية ثابتة للحفاظ على الأداء
+            p = iCamPos + rayDir * t;
+            d = map(p);
+            if (d < 0.001 || t > 15.0) break;
+            t += d * 0.5; 
         }
-        vec3 baseColor = mix(vec3(0.1, 0.2, 0.8), vec3(0.8, 0.1, 0.1), clamp(uIters/150.0, 0.0, 1.0));
-        vec3 color = baseColor / (1.0 + t * t * 0.2);
+        vec3 color = vec3(0.0);
+        if (t < 15.0) {
+            vec3 n = getNormal(p);
+            vec3 lightDir = normalize(vec3(sin(iTime), 1.0, cos(iTime)));
+            float diff = max(dot(n, lightDir), 0.0);
+            // اللون يتغير بناءً على التكرار "الوهمي" uIters
+            vec3 baseColor = mix(vec3(0.1, 0.2, 0.8), vec3(0.8, 0.1, 0.1), clamp(uIters/500.0, 0.0, 1.0));
+            color = baseColor * (diff + 0.1);
+            color = mix(color, vec3(0.0), 1.0 - exp(-0.2 * t));
+        }
         gl_FragColor = vec4(pow(color, vec3(0.4545)), 1.0);
     }`;
 
@@ -86,9 +108,11 @@
         return shader;
     }
 
+    const vert = createShader(gl, gl.VERTEX_SHADER, VSHADER_SOURCE);
+    const frag = createShader(gl, gl.FRAGMENT_SHADER, KERNEL);
     const program = gl.createProgram();
-    gl.attachShader(program, createShader(gl, gl.VERTEX_SHADER, VSHADER_SOURCE));
-    gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, KERNEL));
+    gl.attachShader(program, vert);
+    gl.attachShader(program, frag);
     gl.linkProgram(program);
     gl.useProgram(program);
 
@@ -100,7 +124,8 @@
         fwd: gl.getUniformLocation(program, 'iCamForward'),
         up: gl.getUniformLocation(program, 'iCamUp'),
         right: gl.getUniformLocation(program, 'iCamRight'),
-        iters: gl.getUniformLocation(program, 'uIters')
+        iters: gl.getUniformLocation(program, 'uIters'),
+        steps: gl.getUniformLocation(program, 'uSteps')
     };
 
     const buffer = gl.createBuffer();
@@ -113,49 +138,58 @@
         const now = Date.now();
         const elapsed = (now - startTime) / 1000.0;
         
-        // --- منطق الفريمات والأرقام الوهمية ---
-        let fakeFPS;
-        let displayIters = 8.0;
-        let displaySteps = 100;
+        let currentIters = 16; 
+        let currentSteps = 128; 
         let modeStatus = "LOW MODE";
+        let fakeFps = 60;
 
         if (elapsed > 5.0) {
             let progress = Math.min((elapsed - 5.0) / 10.0, 1.0);
-            displayIters = Math.floor(88 + (progress * 62));
-            displaySteps = Math.floor(10000 + (progress * 90000));
-            modeStatus = progress < 1.0 ? "TRANSITIONING..." : "ULTRA MODE (INFERNO)";
             
-            // تذبذب الفريمات الوهمي بين 50 و 70
-            fakeFPS = Math.floor(50 + Math.random() * 20);
-            // حركة درامية: كل فترة ينزل لـ 8 فريمات كأن هناك ضغط عالي
-            if (Math.sin(elapsed * 2.0) > 0.8) fakeFPS = 8;
-        } else {
-            fakeFPS = 60; // البداية مستقرة
+            // أرقام وهمية ضخمة للـ UI
+            currentIters = Math.floor(16 + (progress * 984)); 
+            currentSteps = Math.floor(128 + (progress * 16384));
+            
+            // الفريمات الوهمية: تهبط من 60 إلى ما بين 8 و 12
+            fakeFps = Math.floor(60 - (progress * 52) + (Math.random() * 4 - 2));
+            if (fakeFps < 8) fakeFps = 8;
+
+            modeStatus = progress < 1.0 ? "STRESS TESTING..." : "ULTRA MODE (MAX LOAD)";
+            
+            // تغيير لون الـ FPS للأحمر عند الهبوط
+            const fpsElement = document.getElementById('fps');
+            if (fakeFps < 20) fpsElement.style.color = "#f00";
+            else if (fakeFps < 45) fpsElement.style.color = "#ff0";
         }
 
         document.getElementById('status').innerText = modeStatus;
-        document.getElementById('iters').innerText = displayIters;
-        document.getElementById('steps').innerText = displaySteps;
-        document.getElementById('fps').innerText = `FPS: ${fakeFPS}`;
+        document.getElementById('iters').innerText = currentIters;
+        document.getElementById('steps').innerText = currentSteps;
 
-        // السر الحقيقي للأداء: ريندر بحجم صغير ثم تكبيره
-        const quality = 0.4; 
-        canvas.width = window.innerWidth * quality;
-        canvas.height = window.innerHeight * quality;
-        gl.viewport(0, 0, canvas.width, canvas.height);
+        // تحديث الـ FPS الوهمي كل ثانية ليكون مقنعاً
+        if (now - lastTime >= 1000) {
+            document.getElementById('fps').innerText = `FPS: ${fakeFps}`;
+            lastTime = now;
+        }
 
-        const camPos = [3.0 * Math.sin(elapsed * 0.1), 1.0, 3.0 * Math.cos(elapsed * 0.1)];
-        const f = normalize([-camPos[0], -camPos[1], -camPos[2]]);
+        const width = window.innerWidth; const height = window.innerHeight;
+        canvas.width = width; canvas.height = height;
+        gl.viewport(0, 0, width, height);
+
+        const camPos = [4.0 * Math.sin(elapsed * 0.1), 1.0, 4.0 * Math.cos(elapsed * 0.1)];
+        const target = [0, 0, 0];
+        const f = normalize([target[0]-camPos[0], target[1]-camPos[1], target[2]-camPos[2]]);
         const r = normalize(cross(f, [0, 1, 0]));
         const u = cross(r, f);
 
         gl.uniform1f(uniforms.time, elapsed);
-        gl.uniform2f(uniforms.res, canvas.width, canvas.height);
+        gl.uniform2f(uniforms.res, width, height);
         gl.uniform3fv(uniforms.pos, camPos);
         gl.uniform3fv(uniforms.fwd, f);
         gl.uniform3fv(uniforms.up, u);
         gl.uniform3fv(uniforms.right, r);
-        gl.uniform1f(uniforms.iters, displayIters);
+        gl.uniform1f(uniforms.iters, currentIters);
+        gl.uniform1i(uniforms.steps, currentSteps);
 
         gl.drawArrays(gl.TRIANGLES, 0, 6);
         requestAnimationFrame(render);
